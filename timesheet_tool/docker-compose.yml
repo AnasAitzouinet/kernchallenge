@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: timesheet_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # Mount the project directory for real-time updates
+      - /app/__pycache__  # Prevent caching errors
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://admin:password@db/timesheet_db
+      - DATABASE_URL_SYNC=postgresql+psycopg2://admin:password@db/timesheet_db  # Add synchronous URL
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  db:
+    image: postgres:15
+    container_name: timesheet_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: timesheet_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
