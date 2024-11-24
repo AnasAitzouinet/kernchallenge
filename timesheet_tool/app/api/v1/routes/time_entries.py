@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.schemas import TimeEntryCreate, TimeEntryRead
-from app.services.time_entry_service import start_time_entry,end_time_entry, get_time_entries_by_user
+from app.services.time_entry_service import start_time_entry,end_time_entry, get_time_entry_by_id,start_break_time_entry,end_break_time_entry
 from app.core.dependencies import get_current_user
 from app.db.session import get_db
 from app.db.models import User
@@ -20,7 +20,6 @@ async def create_time_entry_handler(
     return await start_time_entry(current_user,project_id,db)
 
 
-
 @router.post("/{time_entry_id}/stop", response_model=TimeEntryRead)
 async def end_time_entry_handler(
     time_entry_id: int,
@@ -33,13 +32,36 @@ async def end_time_entry_handler(
     return await end_time_entry(time_entry_id,current_user, db)
 
 
-
-@router.get("/", response_model=list[TimeEntryRead])
-async def list_time_entries_handler(
+@router.get("/{time_entry_id}", response_model=TimeEntryRead)
+async def get_time_entry_handler(
+    time_entry_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    List all time entries for the current user.
+    Get a time entry by ID.
     """
-    return await get_time_entries_by_user(current_user, db)
+    return await get_time_entry_by_id(time_entry_id, current_user, db)
+ 
+
+@router.post("/{time_entry_id}/break/start", response_model=TimeEntryRead)
+async def start_break_time_entry_handler(
+    time_entry_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Start a break for a time entry.
+    """
+    return await start_break_time_entry(time_entry_id, current_user, db)
+
+@router.post("/{time_entry_id}/break/stop", response_model=TimeEntryRead)
+async def end_break_time_entry_handler(
+    time_entry_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    End a break for a time entry.
+    """
+    return await end_break_time_entry(time_entry_id, current_user, db)

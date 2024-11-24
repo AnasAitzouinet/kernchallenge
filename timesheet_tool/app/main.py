@@ -3,7 +3,7 @@ from app.api.v1.routes import auth, projects, time_entries
 from app.db.session import engine
 from app.db.models import Base
 from contextlib import asynccontextmanager
-
+ 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,8 +19,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app with lifespan
 app = FastAPI(title="Timesheet Tool API", version="1.0", lifespan=lifespan)
-
-
+ 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects"])

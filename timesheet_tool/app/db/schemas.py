@@ -37,7 +37,7 @@ class ProjectRead(ProjectBase):
 
 class TimeEntryBase(BaseModel):
     start_time: datetime
-    end_time: datetime
+    end_time: Optional[datetime] = None
     description: Optional[str] = None
 
 class TimeEntryCreate(TimeEntryBase):
