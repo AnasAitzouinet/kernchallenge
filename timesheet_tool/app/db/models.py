@@ -1,10 +1,9 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
-from typing import List, Optional
 from pydantic import BaseModel
-import enum
 from sqlalchemy import CheckConstraint
+import enum
 
 # Base class for database models
 Base = declarative_base()
@@ -47,10 +46,19 @@ class Project(Base):
 # TimeEntry Model
 class TimeEntryStatusEnum(str, enum.Enum):
     open = "open"
-    submitted = "submitted"
-    approved = "approved"
-    rejected = "rejected"
     breaktime = "breaktime"
+    finished = "finished"
+
+
+class Break(Base):
+    __tablename__ = "breaks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    time_entry_id = Column(Integer, ForeignKey("time_entries.id"), nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)
+
+    time_entry = relationship("TimeEntry", back_populates="breaks")
 
 class TimeEntry(Base):
     __tablename__ = "time_entries"
@@ -64,8 +72,7 @@ class TimeEntry(Base):
     status = Column(Enum(TimeEntryStatusEnum), default="open")
     price = Column(Integer, nullable=True)
 
-    start_break_time = Column(DateTime(timezone=True), nullable=True)
-    end_break_time = Column(DateTime(timezone=True), nullable=True)
+    breaks = relationship("Break", back_populates="time_entry")
 
 
     # Relationship with Project

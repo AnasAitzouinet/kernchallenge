@@ -32,7 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function AuthPage() {
   return (
-    <Tabs defaultValue="account" className="w-[400px]">
+    <Tabs defaultValue="signin" className="w-[400px]">
       <TabsList className="w-full">
         <TabsTrigger value="signin"    className="w-full">Sign In</TabsTrigger>
         <TabsTrigger value="signup" className="w-full">Sign Up</TabsTrigger>

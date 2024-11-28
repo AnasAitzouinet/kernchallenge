@@ -14,7 +14,7 @@ docker-compose up -d
 
 # Step 2: Wait for PostgreSQL to be ready
 echo -e "${GREEN}Waiting for PostgreSQL to be ready...${NC}"
-until docker exec timesheet_db pg_isready -U admin; do
+until docker exec timesheets_db pg_isready -U admin; do
     >&2 echo -e "${RED}PostgreSQL is unavailable - retrying...${NC}"
     sleep 2
 done
