@@ -1,24 +1,19 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.core.config import settings
-from sqlalchemy.exc import SQLAlchemyError
+from app.db.models import Base
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Initialize database engine
-engine = create_async_engine(settings.DATABASE_URL, echo=True)
+engine = create_async_engine(settings.DATABASE_URL,pool_size=10, 
+    max_overflow=20)
 
 # Session maker for database transactions
-SessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
-)
+SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Dependency to inject database session
 async def get_db():
-    session = SessionLocal()
-    try:
-        yield session
-    except SQLAlchemyError as e:
-        # Handle SQLAlchemy errors
-        print(f"Database error occurred: {e}")
-        raise
-    finally:
-        await session.close()
+    async with SessionLocal() as db:
+        try:
+            yield db
+        finally:
+            await db.close()

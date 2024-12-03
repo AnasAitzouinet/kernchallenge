@@ -4,6 +4,7 @@ from app.db.models import Project, User
 from app.db.schemas import ProjectCreate
 from sqlalchemy.exc import SQLAlchemyError 
 from fastapi import HTTPException 
+from sqlalchemy.orm import selectinload
 
 async def create_project(project_data: ProjectCreate, user: User, db: AsyncSession) -> Project:
     """
@@ -37,17 +38,18 @@ async def create_project(project_data: ProjectCreate, user: User, db: AsyncSessi
 
 async def get_projects_by_user(user: User, db: AsyncSession):
     """
-    Retrieve all projects owned by a specific user.
+    Retrieve all projects owned by a specific user along with their time entries.
     """
 
     if not user:
         raise HTTPException(status_code=401, detail="User not authenticated")
 
-    query = select(Project).where(Project.owner_id == user.id)
+    query = select(Project).options(selectinload(Project.time_entries)).where(Project.owner_id == user.id)
     result = await db.execute(query)
     results = result.scalars().all()
 
     if not results:
         return {"message": "No projects found"}
+    
     
     return results

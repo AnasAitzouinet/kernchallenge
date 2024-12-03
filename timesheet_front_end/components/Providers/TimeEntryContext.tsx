@@ -10,6 +10,7 @@ import {
 } from '@/server'; // Update with your actual import paths
 import { toast } from 'sonner';
 import { TimeEntryRead, TimeEntryStatus } from '@/types/time-tracking';
+import { useRouter } from 'next/navigation';
 
 
 interface TimeEntryContextProps {
@@ -31,6 +32,8 @@ export function TimeEntryProvider({ children }: { children: React.ReactNode }) {
     const [entries, setEntries] = useState<TimeEntryRead[]>([]);
     const [duration, setDuration] = useState<string>('00:00:00');
     const [FinishedEntries, setFinishedEntries] = useState<TimeEntryRead[]>([]);
+    const router = useRouter();
+
     useEffect(() => {
         const fetchEntries = async () => {
             try {
@@ -38,27 +41,31 @@ export function TimeEntryProvider({ children }: { children: React.ReactNode }) {
                     if (response.error) {
                         toast.error(response.message);
                     } else {
-                        setEntries(response.entries || []);
-                        const active = response.entries?.find(
+                        const allEntries = response.entries || [];
+                        setEntries(allEntries);
+
+                        // Find the active entry
+                        const active = allEntries.find(
                             (entry: TimeEntryRead) => entry.status !== TimeEntryStatus.finished
                         );
-                        console.log(active);
-                        if (active) {
-                            setActiveEntry(active);
-                        } else {
-                            setFinishedEntries(response.entries || []);
-                            setActiveEntry(null);
-                        }
+                        setActiveEntry(active || null);
+
+                        // Filter finished entries
+                        const finished = allEntries.filter(
+                            (entry: TimeEntryRead) => entry.status === TimeEntryStatus.finished
+                        );
+                        setFinishedEntries(finished);
                     }
                 });
             } catch (err) {
-                console.error('Failed to fetch time entries here .', err);
+                console.error('Failed to fetch time entries.', err);
                 toast.error('Failed to fetch time entries.');
             }
         };
 
         fetchEntries();
     }, []);
+
 
     const startEntry = async (projectId: number) => {
         try {
@@ -77,6 +84,8 @@ export function TimeEntryProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             console.error('Failed to start time entry.', err);
             toast.error('Failed to start time entry.');
+        }finally{
+            router.refresh();
         }
     };
 
@@ -102,6 +111,8 @@ export function TimeEntryProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             console.error('Failed to end time entry.', err);
             toast.error('Failed to end time entry.');
+        }finally{
+            router.refresh();
         }
     };
 
@@ -215,24 +226,24 @@ export function TimeEntryProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         // If there's no active entry, reset the duration
         if (!activeEntry) {
-          setDuration('00:00:00');
-          return;
+            setDuration('00:00:00');
+            return;
         }
-      
+
         // Function to update the duration
         const updateDuration = () => {
-          setDuration(calculateDuration());
+            setDuration(calculateDuration());
         };
-      
+
         // Initial call to set the duration immediately
         updateDuration();
-      
+
         // Set up the interval to update every second
         const timer = setInterval(updateDuration, 1000);
-      
+
         // Clean up the interval on component unmount or when activeEntry changes
         return () => clearInterval(timer);
-      }, [activeEntry, calculateDuration]);
+    }, [activeEntry, calculateDuration]);
 
     return (
         <TimeEntryContext.Provider

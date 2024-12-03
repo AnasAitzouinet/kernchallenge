@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -12,7 +12,8 @@ from fastapi import HTTPException
 
 router = APIRouter()
 
-@router.post("/start", response_model=TimeEntryRead)
+ 
+@router.post("/start" )
 async def create_time_entry_handler(
     request: TimeEntryCreate,
     db: AsyncSession = Depends(get_db),
@@ -20,7 +21,9 @@ async def create_time_entry_handler(
 ):
     service = TimeEntryService(db, current_user)
     try:
-        return await service.start_time_entry(request)
+        entry = await service.start_time_entry(request) 
+        return   {"message": "Time entry created successfully"}
+
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     

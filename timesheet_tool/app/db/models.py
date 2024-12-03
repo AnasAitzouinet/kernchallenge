@@ -1,12 +1,13 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, DeclarativeBase
 from sqlalchemy.ext.declarative import declarative_base
 from pydantic import BaseModel
 from sqlalchemy import CheckConstraint
 import enum
 
 # Base class for database models
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 # Enum for user roles
@@ -25,8 +26,8 @@ class User(Base):
     role = Column(Enum(UserRole), default="user")  # user or admin
 
     # Relationship with Project
-    projects = relationship("Project", back_populates="owner")  # Links to 'owner' in Project
-    time_entries = relationship("TimeEntry", back_populates="user")  # Links to 'user' in TimeEntry
+    projects = relationship("Project", back_populates="owner", lazy="raise")  # Links to 'owner' in Project
+    time_entries = relationship("TimeEntry", back_populates="user", lazy="raise")  # Links to 'user' in TimeEntry
 
 # Project Model
 class Project(Base):
@@ -38,10 +39,10 @@ class Project(Base):
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # Bidirectional relationship with User
-    owner = relationship("User", back_populates="projects")
+    owner = relationship("User", back_populates="projects", lazy="raise")
 
     # Relationship with TimeEntry
-    time_entries = relationship("TimeEntry", back_populates="project")  # Links to 'project' in TimeEntry
+    time_entries = relationship("TimeEntry", back_populates="project", lazy="raise")  # Links to 'project' in TimeEntry
 
 # TimeEntry Model
 class TimeEntryStatusEnum(str, enum.Enum):
@@ -58,7 +59,7 @@ class Break(Base):
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=True)
 
-    time_entry = relationship("TimeEntry", back_populates="breaks")
+    time_entry = relationship("TimeEntry", back_populates="breaks", lazy="raise")
 
 class TimeEntry(Base):
     __tablename__ = "time_entries"
@@ -72,12 +73,14 @@ class TimeEntry(Base):
     status = Column(Enum(TimeEntryStatusEnum), default="open")
     price = Column(Integer, nullable=True)
 
-    breaks = relationship("Break", back_populates="time_entry")
+    # stay_duration = Column(Integer, nullable=True)
+    
+    breaks = relationship("Break", back_populates="time_entry", lazy="raise")
 
 
     # Relationship with Project
-    project = relationship("Project", back_populates="time_entries")  # Links to 'time_entries' in Project
-    user = relationship("User", back_populates="time_entries")
+    project = relationship("Project", back_populates="time_entries", lazy="raise")  # Links to 'time_entries' in Project
+    user = relationship("User", back_populates="time_entries", lazy="raise")  # Links to 'time_entries' in User
     __table_args__ = (
         CheckConstraint('end_time > start_time', name='check_end_time'),
     )

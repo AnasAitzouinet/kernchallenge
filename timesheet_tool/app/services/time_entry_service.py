@@ -9,8 +9,7 @@ from fastapi import HTTPException
 from datetime import datetime, timezone
 from sqlalchemy.exc import IntegrityError
 
-from sqlalchemy.exc import InvalidRequestError
-
+ 
 class TimeEntryService:
     def __init__(self, db: AsyncSession, user: User):
         self.db = db
@@ -43,17 +42,10 @@ class TimeEntryService:
             description=request.description or None,
         )
         
-        try:
-            self.db.add(new_entry)
-            await self.db.commit()
-            await self.db.refresh(new_entry)
-        except IntegrityError as e:
-            await self.db.rollback()
-            raise HTTPException(status_code=400, detail="Database integrity error: " + str(e.orig))
-        except Exception as e:
-            await self.db.rollback()
-            raise HTTPException(status_code=500, detail="An error occurred while starting the time entry: " + str(e))
 
+        self.db.add(new_entry)
+        await self.db.commit()
+        await self.db.refresh(new_entry, ["project", "user", "breaks"])
         return new_entry
 
 
