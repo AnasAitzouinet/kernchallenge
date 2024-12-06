@@ -1,19 +1,29 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum, func
-from sqlalchemy.orm import relationship, DeclarativeBase
-from sqlalchemy.ext.declarative import declarative_base
-from pydantic import BaseModel
-from sqlalchemy import CheckConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey,
+    DateTime,
+    Enum,
+    Boolean,
+    func,
+    CheckConstraint,
+)
+from sqlalchemy.orm import relationship, declarative_base
 import enum
+from pydantic import BaseModel
 
-# Base class for database models
-class Base(DeclarativeBase):
-    pass
+Base = declarative_base()
 
-
-# Enum for user roles
+# Enums
 class UserRole(str, enum.Enum):
     user = "user"
     admin = "admin"
+
+class TimeEntryStatusEnum(str, enum.Enum):
+    open = "open"
+    finished = "finished"
+    breaktime = "breaktime"
 
 # User Model
 class User(Base):
@@ -23,11 +33,10 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(Enum(UserRole), default="user")  # user or admin
+    role = Column(Enum(UserRole), default=UserRole.user)
 
-    # Relationship with Project
-    projects = relationship("Project", back_populates="owner", lazy="raise")  # Links to 'owner' in Project
-    time_entries = relationship("TimeEntry", back_populates="user", lazy="raise")  # Links to 'user' in TimeEntry
+    # Relationships
+    projects = relationship("Project", back_populates="owner", lazy="raise")
 
 # Project Model
 class Project(Base):
@@ -37,56 +46,41 @@ class Project(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    end_time = Column(DateTime(timezone=True), nullable=True)
+    status = Column(Enum(TimeEntryStatusEnum), default=TimeEntryStatusEnum.open)
+    redo = Column(Boolean, default=False)
 
-    # Bidirectional relationship with User
+    # Relationships
     owner = relationship("User", back_populates="projects", lazy="raise")
+    breaks = relationship(
+        "Break",
+        back_populates="project",
+        lazy="raise",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
 
-    # Relationship with TimeEntry
-    time_entries = relationship("TimeEntry", back_populates="project", lazy="raise")  # Links to 'project' in TimeEntry
-
-# TimeEntry Model
-class TimeEntryStatusEnum(str, enum.Enum):
-    open = "open"
-    breaktime = "breaktime"
-    finished = "finished"
-
-
-class Break(Base):
-    __tablename__ = "breaks"
-
-    id = Column(Integer, primary_key=True, index=True)
-    time_entry_id = Column(Integer, ForeignKey("time_entries.id"), nullable=False)
-    start_time = Column(DateTime(timezone=True), nullable=False)
-    end_time = Column(DateTime(timezone=True), nullable=True)
-
-    time_entry = relationship("TimeEntry", back_populates="breaks", lazy="raise")
-
-class TimeEntry(Base):
-    __tablename__ = "time_entries"
-
-    id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    start_time = Column(DateTime(timezone=True), nullable=False, default=func.now())
-    end_time = Column(DateTime(timezone=True), nullable=True)
-    description = Column(String)
-    status = Column(Enum(TimeEntryStatusEnum), default="open")
-    price = Column(Integer, nullable=True)
-
-    # stay_duration = Column(Integer, nullable=True)
-    
-    breaks = relationship("Break", back_populates="time_entry", lazy="raise")
-
-
-    # Relationship with Project
-    project = relationship("Project", back_populates="time_entries", lazy="raise")  # Links to 'time_entries' in Project
-    user = relationship("User", back_populates="time_entries", lazy="raise")  # Links to 'time_entries' in User
     __table_args__ = (
         CheckConstraint('end_time > start_time', name='check_end_time'),
     )
 
+# Break Model
+class Break(Base):
+    __tablename__ = "breaks"
 
-# Pydantic models for request validation
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False)
+    end_time = Column(DateTime(timezone=True), nullable=True)
+
+    # Relationships
+    project = relationship("Project", back_populates="breaks", lazy="raise")
+
+    __table_args__ = (
+        CheckConstraint('end_time >= start_time', name='check_break_end_time'),
+    )
+
 class LoginRequest(BaseModel):
     email: str
     password: str

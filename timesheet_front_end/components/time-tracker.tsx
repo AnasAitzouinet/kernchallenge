@@ -21,9 +21,9 @@ import { TimeEntryProvider, useTimeEntryContext } from '@/components/Providers/T
 
 export default function TimeTracker() {
   return (
-    <TimeEntryProvider>
+    
       <TimeTrackerContent />
-    </TimeEntryProvider>
+  
   );
 }
 

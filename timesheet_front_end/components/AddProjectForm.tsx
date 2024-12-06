@@ -1,20 +1,52 @@
 "use client"
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ProjectCreate } from '@/types/time-tracking'; // Ensure to import the correct type
-import { toast } from 'sonner'; // Import toast for notifications
-import { AddNewProject } from '@/server';
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 
+import { Button } from "@/components/ui/button"
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { AddNewProjectSchema } from "@/schemas"
+import { Textarea } from "./ui/textarea"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns";
+import { Calendar } from "./ui/calendar"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useState } from "react"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { ProjectCreate } from "@/types/time-tracking"
+import { toast } from "sonner"
+import { AddNewProject } from "@/server"
+import { DatetimePicker } from "./ui/Datetime-picker"
 
-export default function AddProjectForm({children}: {children: React.ReactNode}) {
+export default function AddProjectForm({ children }: { children: React.ReactNode }) {
     const [newProject, setNewProject] = useState<ProjectCreate>({ name: '', description: '' });
     const [loadingProjectAdd, setLoadingProjectAdd] = useState<boolean>(false);
-
+     
     const handleAddProject = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!newProject.name || !newProject.description) {
@@ -38,54 +70,106 @@ export default function AddProjectForm({children}: {children: React.ReactNode}) 
             setLoadingProjectAdd(false);
         }
     };
+    const form = useForm<z.infer<typeof AddNewProjectSchema>>({
+        resolver: zodResolver(AddNewProjectSchema),
+        defaultValues: {
+            name: "",
+            description: "",
+            start_time: new Date(),
+            end_time: new Date(),
+        },
+    })
+
+    const onSubmit = (values: z.infer<typeof AddNewProjectSchema>) => {
+        console.log(values)
+    }
 
     return (
         <Dialog>
-            <DialogTrigger>
+            <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Create a new Project</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleAddProject}>
-                    <div className="grid gap-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Project Name</Label>
-                            <Input
-                                id="name"
-                                type="text"
-                                placeholder="Time sheet project"
-                                value={newProject.name}
-                                onChange={(e) =>
-                                    setNewProject({ ...newProject, name: e.target.value })
-                                }
-                                disabled={loadingProjectAdd}
-                                required
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="description">Description</Label>
-                            <Textarea
-                                id="description"
-                                placeholder="Enter a description"
-                                value={newProject.description}
-                                onChange={(e) =>
-                                    setNewProject({ ...newProject, description: e.target.value })
-                                }
-                                disabled={loadingProjectAdd}
-                                required
-                            />
-                        </div>
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={loadingProjectAdd}
-                        >
-                            {loadingProjectAdd ? 'Adding Project...' : 'Add Project'}
-                        </Button>
-                    </div>
-                </form>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 ">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Username</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="timesheet app" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="Enter project description here..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="start_time"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel className="flex items-center">
+                                        <CalendarIcon size={16} />
+                                        <span className="ml-2">Start Time</span>
+                                    </FormLabel>
+                                    <DatetimePicker
+                                        {...field}
+                                        format={[
+                                            ["months", "days", "years"],
+                                            ["hours", "minutes", "am/pm"],
+                                        ]}
+                                    />
+                                    
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="end_time"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel className="flex items-center">
+                                        <CalendarIcon size={16} />
+                                        <span className="ml-2">End Time</span>
+                                    </FormLabel>
+                                    <DatetimePicker
+                                        {...field}
+                                        format={[
+                                            ["months", "days", "years"],
+                                            ["hours", "minutes", "am/pm"],
+                                        ]}
+                                    />
+                                    <FormDescription>
+                                        <span className="text-xs text-muted-foreground">
+                                            project will be automatically closed after this time
+                                        </span>
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit">Submit</Button>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     )

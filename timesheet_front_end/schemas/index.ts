@@ -1,3 +1,4 @@
+import { start } from "repl"
 import { z } from "zod"
 
 export const LoginFormSchema = z.object({
@@ -51,5 +52,20 @@ export const TimeEntrySchema = z.object({
   }),
   end_break_time: z.date({
     message: "End break time must be a valid date."
+  }),
+})
+
+export const AddNewProjectSchema = z.object({
+  name: z.string().min(4, {
+    message: "Name must be at least 4 characters long."
+  }),
+  description: z.string().min(4, {
+    message: "Description must be at least 4 characters long."
+  }),
+  start_time: z.date({
+    message: "Start time must be a valid date."
+  }),
+  end_time: z.date({
+    message: "End time must be a valid date."
   }),
 })

@@ -25,6 +25,10 @@ class UserRead(BaseModel):
 class ProjectBase(BaseModel):
     name: str
     description: Optional[str] = None
+    start_time: Optional[datetime] = Field(default_factory=datetime.now)
+    end_time: Optional[datetime] = None
+    status: Optional[TimeEntryStatusEnum] = TimeEntryStatusEnum.open
+    redo: Optional[bool] = False
 
 class ProjectCreate(ProjectBase):
     pass
@@ -36,35 +40,3 @@ class ProjectRead(ProjectBase):
     class Config:
         orm_mode = True
 
-
-# Time entry schemas
-
-class BreakCreate(BaseModel):
-    time_entry_id: int
-
-
-class BreakRead(BaseModel):
-    id: int
-    start_time: datetime
-    end_time: Optional[datetime]
-
-    class Config:
-        orm_mode = True
-        
-class TimeEntryCreate(BaseModel):
-    project_id: int
-    description: Optional[str] = Field(None, max_length=255)
-
-
-class TimeEntryRead(BaseModel):
-    id: int
-    project_id: int
-    user_id: int
-    start_time: datetime
-    end_time: Optional[datetime]
-    description: Optional[str]
-    status: TimeEntryStatusEnum
-    breaks: List[BreakRead] = []
-
-    class Config:
-        orm_mode = True
